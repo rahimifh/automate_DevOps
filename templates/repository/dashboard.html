@@ -7,6 +7,48 @@
     <div class="col-12">
         <h1 class="mb-4"><span class="emoji-icon">📊</span> Dashboard</h1>
         
+        <!-- Workflow Steps -->
+        <div class="card mb-4">
+            <div class="card-header bg-dark text-white">
+                <h4 class="mb-0">Your GitHub Manager Workflow</h4>
+            </div>
+            <div class="card-body">
+                <div class="workflow-steps">
+                    <div class="row text-center">
+                        <div class="col-md-3 step {% if has_github_config %}step-complete{% else %}step-active{% endif %}">
+                            <div class="step-circle">1</div>
+                            <div class="step-title">GitHub Setup</div>
+                            <div class="step-description">Configure your GitHub credentials</div>
+                            {% if not has_github_config %}
+                            <a href="{% url 'github_config' %}" class="btn btn-sm btn-primary mt-2">Configure Now</a>
+                            {% endif %}
+                        </div>
+                        <div class="col-md-3 step {% if has_github_config and not repositories %}step-active{% elif repositories %}step-complete{% else %}step-disabled{% endif %}">
+                            <div class="step-circle">2</div>
+                            <div class="step-title">Create Repository</div>
+                            <div class="step-description">Create or connect to a repository</div>
+                            {% if has_github_config and not repositories %}
+                            <a href="{% url 'repository_choice' %}" class="btn btn-sm btn-primary mt-2">Start Now</a>
+                            {% endif %}
+                        </div>
+                        <div class="col-md-3 step {% if repositories %}step-active{% else %}step-disabled{% endif %}">
+                            <div class="step-circle">3</div>
+                            <div class="step-title">Upload Files</div>
+                            <div class="step-description">Add content to your repository</div>
+                            {% if repositories %}
+                            <a href="{% url 'repository_detail' repositories.first.id %}" class="btn btn-sm btn-primary mt-2">Upload Files</a>
+                            {% endif %}
+                        </div>
+                        <div class="col-md-3 step step-disabled">
+                            <div class="step-circle">4</div>
+                            <div class="step-title">Manage Repository</div>
+                            <div class="step-description">Track changes and collaborate</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
         {% if not has_github_config %}
             <div class="alert alert-warning">
                 <span class="emoji-icon">⚠️</span> You need to set up your GitHub configuration first.
@@ -35,8 +77,16 @@
                         {% endfor %}
                     </div>
                 {% else %}
-                    <p class="mb-0">You don't have any repositories yet.</p>
-                    <a href="{% url 'repository_choice' %}" class="btn btn-primary mt-3">Create or Connect Repository</a>
+                    <div class="text-center">
+                        <p class="mb-3">You don't have any repositories yet.</p>
+                        {% if has_github_config %}
+                        <a href="{% url 'repository_choice' %}" class="btn btn-primary">
+                            <i class="bi bi-plus-circle me-2"></i> Create or Connect Repository
+                        </a>
+                        {% else %}
+                        <p>Please configure your GitHub settings first.</p>
+                        {% endif %}
+                    </div>
                 {% endif %}
             </div>
         </div>

@@ -11,7 +11,7 @@ urlpatterns = [
     # Authentication URLs
     path('signup/', repo_views.signup_view, name='signup'),
     path('login/', auth_views.LoginView.as_view(template_name='repository/login.html'), name='login'),
-    path('logout/', auth_views.LogoutView.as_view(), name='logout'),
+    path('logout/', auth_views.LogoutView.as_view(next_page='login'), name='logout'),
     
     # Dashboard and GitHub Config
     path('', repo_views.dashboard_view, name='dashboard'),
@@ -22,6 +22,10 @@ urlpatterns = [
     path('new-repository/', repo_views.new_repository_view, name='new_repository'),
     path('existing-repository/', repo_views.existing_repository_view, name='existing_repository'),
     path('repository/<int:repo_id>/', repo_views.repository_detail_view, name='repository_detail'),
+    # Handle empty path for browse
+    path('repository/<int:repo_id>/browse/', repo_views.repository_browse_view, name='repository_browse_root'),
+    # URL for browsing nested directories
+    path('repository/<int:repo_id>/browse/<path:path>/', repo_views.repository_browse_view, name='repository_browse'),
 ]
 
 # Serve media files in development

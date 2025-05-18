@@ -15,6 +15,36 @@
                     <p class="mb-0">Make sure your GitHub token has access to this repository.</p>
                 </div>
                 
+                {% if error %}
+                <div class="alert alert-danger">
+                    <h5 class="alert-heading"><i class="bi bi-exclamation-triangle-fill me-2"></i> Error</h5>
+                    <p>{{ error }}</p>
+                    
+                    {% if repo_exists_on_github %}
+                    <hr>
+                    <div class="row">
+                        <div class="col-md-8">
+                            <h6>Repository Information:</h6>
+                            <ul>
+                                <li><strong>Name:</strong> {{ github_repo_info.name }}</li>
+                                <li><strong>URL:</strong> <a href="{{ github_repo_info.html_url }}" target="_blank">{{ github_repo_info.html_url }}</a></li>
+                                <li><strong>Default Branch:</strong> {{ github_repo_info.default_branch }}</li>
+                                <li><strong>Created:</strong> {{ github_repo_info.created_at|date:"F j, Y" }}</li>
+                            </ul>
+                            <p>The repository exists on GitHub, but we encountered an error connecting to it. Please try again.</p>
+                        </div>
+                        <div class="col-md-4 text-end">
+                            <img src="{{ github_repo_info.owner.avatar_url }}" alt="Owner avatar" class="img-thumbnail mb-2" style="width: 80px;">
+                            <br>
+                            <a href="{% url 'new_repository' %}" class="btn btn-sm btn-primary">
+                                <i class="bi bi-plus-circle me-1"></i> Create New Instead
+                            </a>
+                        </div>
+                    </div>
+                    {% endif %}
+                </div>
+                {% endif %}
+                
                 <form method="post">
                     {% csrf_token %}
                     
@@ -30,6 +60,49 @@
                         <a href="{% url 'repository_choice' %}" class="btn btn-outline-secondary">Cancel</a>
                     </div>
                 </form>
+            </div>
+        </div>
+        
+        <div class="card mt-4">
+            <div class="card-header bg-light">
+                <h5 class="mb-0">Common Issues</h5>
+            </div>
+            <div class="card-body">
+                <div class="accordion" id="accordionIssues">
+                    <div class="accordion-item">
+                        <h2 class="accordion-header">
+                            <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseRepoNotFound">
+                                Repository Not Found
+                            </button>
+                        </h2>
+                        <div id="collapseRepoNotFound" class="accordion-collapse collapse" data-bs-parent="#accordionIssues">
+                            <div class="accordion-body">
+                                <p>This happens when the repository name does not exist in your GitHub account. Possible solutions:</p>
+                                <ul>
+                                    <li>Check the spelling of the repository name</li>
+                                    <li>Make sure you're using the exact repository name, not the full URL</li>
+                                    <li>Verify that your GitHub token has access to the repository</li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="accordion-item">
+                        <h2 class="accordion-header">
+                            <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseEmptyRepo">
+                                Empty Repository Error
+                            </button>
+                        </h2>
+                        <div id="collapseEmptyRepo" class="accordion-collapse collapse" data-bs-parent="#accordionIssues">
+                            <div class="accordion-body">
+                                <p>If your repository is completely empty (no branches, no commits), the system might have trouble connecting to it. Solutions:</p>
+                                <ul>
+                                    <li>Initialize the repository on GitHub with a README first</li>
+                                    <li>Create a new repository through this app instead</li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
