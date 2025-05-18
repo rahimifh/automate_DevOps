@@ -22,6 +22,8 @@ urlpatterns = [
     path('new-repository/', repo_views.new_repository_view, name='new_repository'),
     path('existing-repository/', repo_views.existing_repository_view, name='existing_repository'),
     path('repository/<int:repo_id>/', repo_views.repository_detail_view, name='repository_detail'),
+    # New URL for browsing nested directories
+    path('repository/<int:repo_id>/browse/<path:path>/', repo_views.repository_browse_view, name='repository_browse'),
 ]
 
 # Serve media files in development

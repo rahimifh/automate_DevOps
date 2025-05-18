@@ -24,17 +24,87 @@
                 <h4 class="mb-0"><span class="emoji-icon">📋</span> Repository Files</h4>
             </div>
             <div class="card-body">
-                {% if files %}
+                <!-- Breadcrumb navigation -->
+                {% if breadcrumbs %}
+                <nav aria-label="breadcrumb">
+                    <ol class="breadcrumb">
+                        {% for crumb in breadcrumbs %}
+                            {% if forloop.last %}
+                                <li class="breadcrumb-item active">{{ crumb.name }}</li>
+                            {% else %}
+                                <li class="breadcrumb-item">
+                                    <a href="{% if crumb.path %}{% url 'repository_browse' repository.id crumb.path %}{% else %}{% url 'repository_detail' repository.id %}{% endif %}">{{ crumb.name }}</a>
+                                </li>
+                            {% endif %}
+                        {% endfor %}
+                    </ol>
+                </nav>
+                {% endif %}
+                
+                {% if directories or files %}
                     <div class="list-group">
+                        <!-- Directories first -->
+                        {% for dir in directories %}
+                            <a href="{% url 'repository_browse' repository.id dir.path %}" class="list-group-item list-group-item-action">
+                                <i class="bi bi-folder-fill text-warning me-2"></i> {{ dir.name }}/
+                            </a>
+                        {% endfor %}
+                        
+                        <!-- Files -->
                         {% for file in files %}
-                            <div class="list-group-item">
-                                <i class="bi bi-file-earmark"></i> {{ file }}
+                            <div class="list-group-item d-flex justify-content-between align-items-center">
+                                <div>
+                                    {% if file.type == 'pdf' %}
+                                        <i class="bi bi-file-pdf text-danger me-2"></i>
+                                    {% elif file.type == 'md' %}
+                                        <i class="bi bi-markdown text-primary me-2"></i>
+                                    {% elif file.type == 'txt' %}
+                                        <i class="bi bi-file-text text-secondary me-2"></i>
+                                    {% elif file.type == 'jpg' or file.type == 'png' or file.type == 'gif' %}
+                                        <i class="bi bi-file-image text-success me-2"></i>
+                                    {% elif file.type == 'js' %}
+                                        <i class="bi bi-filetype-js text-warning me-2"></i>
+                                    {% elif file.type == 'html' %}
+                                        <i class="bi bi-filetype-html text-danger me-2"></i>
+                                    {% elif file.type == 'css' %}
+                                        <i class="bi bi-filetype-css text-info me-2"></i>
+                                    {% elif file.type == 'py' %}
+                                        <i class="bi bi-filetype-py text-primary me-2"></i>
+                                    {% elif file.type == 'json' %}
+                                        <i class="bi bi-filetype-json text-success me-2"></i>
+                                    {% elif file.type == 'yml' or file.type == 'yaml' %}
+                                        <i class="bi bi-filetype-yml text-info me-2"></i>
+                                    {% else %}
+                                        <i class="bi bi-file text-muted me-2"></i>
+                                    {% endif %}
+                                    {{ file.name }}
+                                </div>
+                                <span class="badge bg-secondary rounded-pill">{{ file.size|filesizeformat }}</span>
                             </div>
                         {% endfor %}
                     </div>
                 {% else %}
-                    <p class="text-center">No files in this repository yet. Upload some files to get started!</p>
+                    <div class="alert alert-info">
+                        <p class="mb-0 text-center">This directory is empty. Upload some files to get started!</p>
+                    </div>
                 {% endif %}
+            </div>
+        </div>
+        
+        <!-- Contextual "Next Steps" Card -->
+        <div class="card mb-4">
+            <div class="card-header bg-dark text-white">
+                <h4 class="mb-0"><span class="emoji-icon">🔄</span> Next Steps</h4>
+            </div>
+            <div class="card-body">
+                <div class="list-group">
+                    <a href="{% url 'dashboard' %}" class="list-group-item list-group-item-action">
+                        <i class="bi bi-house-door me-2"></i> Return to Dashboard
+                    </a>
+                    <a href="{% url 'repository_choice' %}" class="list-group-item list-group-item-action">
+                        <i class="bi bi-plus-circle me-2"></i> Add Another Repository
+                    </a>
+                </div>
             </div>
         </div>
     </div>
@@ -45,6 +115,13 @@
                 <h4 class="mb-0"><span class="emoji-icon">⬆️</span> Upload File</h4>
             </div>
             <div class="card-body">
+                <p class="mb-2">
+                    {% if current_path %}
+                    Uploading to: <code>{{ current_path }}</code>
+                    {% else %}
+                    Uploading to repository root
+                    {% endif %}
+                </p>
                 <form method="post" enctype="multipart/form-data">
                     {% csrf_token %}
                     <div class="mb-3">
@@ -60,18 +137,25 @@
         
         <div class="card mb-4">
             <div class="card-header bg-dark text-white">
-                <h4 class="mb-0"><span class="emoji-icon">📂</span> Upload Folder</h4>
+                <h4 class="mb-0"><span class="emoji-icon">📂</span> Upload Multiple Files</h4>
             </div>
             <div class="card-body">
+                <p class="mb-2">
+                    {% if current_path %}
+                    Uploading to: <code>{{ current_path }}</code>
+                    {% else %}
+                    Uploading to repository root
+                    {% endif %}
+                </p>
                 <form method="post" enctype="multipart/form-data">
                     {% csrf_token %}
                     <div class="mb-3">
                         {{ folder_form.folder.errors }}
                         {{ folder_form.folder }}
-                        <div class="form-text text-muted">Select multiple files from a folder to upload</div>
+                        <div class="form-text text-muted">Select multiple files to upload</div>
                     </div>
                     <div class="d-grid">
-                        <button type="submit" class="btn btn-success">Upload Folder</button>
+                        <button type="submit" class="btn btn-success">Upload Files</button>
                     </div>
                 </form>
             </div>
