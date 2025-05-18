@@ -7,6 +7,11 @@
 }
 
 /* Card styling */
+.card-header {
+    font-weight: 500;
+    padding: 0.75rem 1.25rem;
+}
+
 .card {
     border-radius: 0.5rem;
     box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
@@ -14,10 +19,7 @@
     overflow: hidden;
 }
 
-.card-header {
-    font-weight: 500;
-    padding: 0.75rem 1.25rem;
-}
+
 
 /* Button styling */
 .btn {
