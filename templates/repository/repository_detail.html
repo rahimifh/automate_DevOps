@@ -122,7 +122,7 @@
                     Uploading to repository root
                     {% endif %}
                 </p>
-                <form method="post" enctype="multipart/form-data">
+                <form method="post" enctype="multipart/form-data" action="{% if current_path %}{% url 'repository_browse' repository.id current_path %}{% else %}{% url 'repository_browse_root' repository.id %}{% endif %}">
                     {% csrf_token %}
                     <div class="mb-3">
                         {{ file_form.file.errors }}
@@ -147,7 +147,7 @@
                     Uploading to repository root
                     {% endif %}
                 </p>
-                <form method="post" enctype="multipart/form-data">
+                <form method="post" enctype="multipart/form-data" action="{% if current_path %}{% url 'repository_browse' repository.id current_path %}{% else %}{% url 'repository_browse_root' repository.id %}{% endif %}">
                     {% csrf_token %}
                     <div class="mb-3">
                         {{ folder_form.folder.errors }}

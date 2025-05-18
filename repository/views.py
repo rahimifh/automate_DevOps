@@ -111,6 +111,32 @@ def new_repository_view(request):
             
             if response.status_code != 201:
                 error_msg = f"Repository creation failed: {response.status_code} {response.text}"
+                error_details = {}
+                
+                try:
+                    error_data = response.json()
+                    if response.status_code == 422 and "errors" in error_data:
+                        for err in error_data["errors"]:
+                            if err.get("field") == "name" and "already exists" in err.get("message", ""):
+                                messages.error(request, f"A repository named '{repo_name}' already exists on your GitHub account.")
+                                
+                                # Check if the repo exists in our database
+                                existing_repos = Repository.objects.filter(
+                                    user=request.user, 
+                                    name=repo_name
+                                )
+                                
+                                # Context for the template
+                                return render(request, 'repository/new_repository.html', {
+                                    'form': form,
+                                    'repo_name': repo_name,
+                                    'name_exists': True,
+                                    'repo_in_db': existing_repos.exists(),
+                                    'existing_repo_id': existing_repos.first().id if existing_repos.exists() else None
+                                })
+                except:
+                    pass
+                
                 messages.error(request, error_msg)
                 return render(request, 'repository/new_repository.html', {
                     'form': form,
@@ -179,6 +205,10 @@ jobs:
 
 @login_required
 def existing_repository_view(request):
+    error_message = None
+    repo_exists_on_github = False
+    github_repo_info = None
+    
     if request.method == 'POST':
         form = ExistingRepositoryForm(request.POST)
         if form.is_valid():
@@ -191,6 +221,31 @@ def existing_repository_view(request):
             
             repo_name = form.cleaned_data['name']
             
+            # Check if repository exists in our database
+            existing_repo = Repository.objects.filter(user=request.user, name=repo_name).first()
+            if existing_repo:
+                messages.info(request, f"Repository '{repo_name}' is already connected.")
+                return redirect('repository_detail', repo_id=existing_repo.id)
+            
+            # Check if repository exists on GitHub
+            headers = {"Authorization": f"token {github_config.github_token}"}
+            response = requests.get(
+                f"https://api.github.com/repos/{github_config.github_username}/{repo_name}", 
+                headers=headers
+            )
+            
+            if response.status_code != 200:
+                error_message = f"Repository '{repo_name}' not found on GitHub. Please check the name and try again."
+                messages.error(request, error_message)
+                return render(request, 'repository/existing_repository.html', {
+                    'form': form,
+                    'error': error_message
+                })
+            
+            # Repository exists on GitHub, get info
+            repo_exists_on_github = True
+            github_repo_info = response.json()
+            
             # Create local repository directory
             repo_dir = os.path.join(settings.MEDIA_ROOT, request.user.username, repo_name)
             os.makedirs(repo_dir, exist_ok=True)
@@ -199,29 +254,71 @@ def existing_repository_view(request):
             repo_url = f"https://{github_config.github_token}@github.com/{github_config.github_username}/{repo_name}.git"
             
             try:
+                # Initialize git and add remote
                 subprocess.run(["git", "init"], cwd=repo_dir, check=True)
                 subprocess.run(["git", "remote", "add", "origin", repo_url], cwd=repo_dir, check=True)
-                subprocess.run(["git", "fetch"], cwd=repo_dir, check=True)
-                subprocess.run(["git", "checkout", "main"], cwd=repo_dir, check=True)
                 
-                # Save repository to database
+                # Try to fetch and checkout
+                try:
+                    subprocess.run(["git", "fetch"], cwd=repo_dir, check=True)
+                    
+                    # Determine default branch (usually main or master)
+                    default_branch = github_repo_info.get('default_branch', 'main')
+                    
+                    try:
+                        subprocess.run(["git", "checkout", default_branch], cwd=repo_dir, check=True)
+                    except subprocess.CalledProcessError:
+                        # If main branch checkout fails, try to create it
+                        subprocess.run(["git", "checkout", "-b", default_branch], cwd=repo_dir, check=True)
+                        # For empty repositories, create a basic README
+                        with open(os.path.join(repo_dir, "README.md"), "w") as f:
+                            f.write(f"# {repo_name}\n{github_repo_info.get('description', '')}")
+                        subprocess.run(["git", "add", "."], cwd=repo_dir, check=True)
+                        subprocess.run(["git", "commit", "-m", "Initial README"], cwd=repo_dir, check=True)
+                        subprocess.run(["git", "push", "-u", "origin", default_branch], cwd=repo_dir, check=True)
+                    
+                except subprocess.CalledProcessError:
+                    error_message = "Failed to fetch from repository. This may be an empty repository."
+                    # Continue anyway - we'll connect to the empty repository
+                    messages.warning(request, error_message)
+                
+                # Save repository to database regardless of git operations
                 repository = Repository(
                     user=request.user,
                     name=repo_name,
-                    url=f"https://github.com/{github_config.github_username}/{repo_name}",
+                    description=github_repo_info.get('description', ''),
+                    is_private=github_repo_info.get('private', False),
+                    url=github_repo_info.get('html_url', f"https://github.com/{github_config.github_username}/{repo_name}"),
                     local_path=repo_dir
                 )
                 repository.save()
                 
                 messages.success(request, f"Successfully connected to repository '{repo_name}'")
                 return redirect('repository_detail', repo_id=repository.id)
+                
             except subprocess.CalledProcessError as e:
-                messages.error(request, f"Error connecting to repository: {str(e)}")
-                return render(request, 'repository/existing_repository.html', {'form': form})
+                error_message = f"Error connecting to repository: {str(e)}"
+                messages.error(request, error_message)
+                
+                # Clean up failed attempt
+                try:
+                    shutil.rmtree(repo_dir)
+                except:
+                    pass
+                    
+                return render(request, 'repository/existing_repository.html', {
+                    'form': form,
+                    'error': error_message,
+                    'repo_exists_on_github': repo_exists_on_github,
+                    'github_repo_info': github_repo_info
+                })
     else:
         form = ExistingRepositoryForm()
         
-    return render(request, 'repository/existing_repository.html', {'form': form})
+    return render(request, 'repository/existing_repository.html', {
+        'form': form,
+        'error': error_message
+    })
 
 
 @login_required
@@ -238,10 +335,13 @@ def repository_browse_view(request, repo_id, path=''):
     file_form = FileUploadForm()
     folder_form = FolderUploadForm()
     
+
+    
     # Normalize the path for security
     current_path = os.path.normpath(path).lstrip('/')
     full_path = os.path.join(repository.local_path, current_path)
     
+
     # Process file uploads
     if request.method == 'POST':
         if 'file' in request.FILES:
@@ -252,8 +352,14 @@ def repository_browse_view(request, repo_id, path=''):
                 # Determine the target path
                 if current_path:
                     file_path = os.path.join(repository.local_path, current_path, uploaded_file.name)
+                    target_redirect = f"repository_browse"
+                    redirect_args = {"repo_id": repository.id, "path": current_path}
+ 
                 else:
                     file_path = os.path.join(repository.local_path, uploaded_file.name)
+                    target_redirect = f"repository_detail"
+                    redirect_args = {"repo_id": repository.id}
+
                 
                 # Save the file
                 with open(file_path, 'wb+') as destination:
@@ -269,11 +375,14 @@ def repository_browse_view(request, repo_id, path=''):
                 
                 # Stay in the current directory after upload
                 if current_path:
+                   
                     return redirect('repository_browse', repo_id=repository.id, path=current_path)
                 else:
-                    return redirect('repository_detail', repo_id=repository.id)
+                
+                    return redirect('repository_browse_root', repo_id=repository.id)
                 
         elif 'folder' in request.FILES:
+            # Similarly add debug info for folder uploads
             folder_form = FolderUploadForm(request.POST, request.FILES)
             if folder_form.is_valid():
                 files = request.FILES.getlist('folder')
@@ -308,9 +417,11 @@ def repository_browse_view(request, repo_id, path=''):
                 
                 # Stay in the current directory after upload
                 if current_path:
+                  
                     return redirect('repository_browse', repo_id=repository.id, path=current_path)
                 else:
-                    return redirect('repository_detail', repo_id=repository.id)
+              
+                    return redirect('repository_browse_root', repo_id=repository.id)
     
     # List files and directories
     files = []

@@ -10,7 +10,38 @@
                 <h3 class="mb-0"><span class="emoji-icon">➕</span> Create New Repository</h3>
             </div>
             <div class="card-body">
-                {% if error %}
+                {% if name_exists %}
+                    <div class="alert alert-danger">
+                        <h5 class="alert-heading"><i class="bi bi-exclamation-triangle-fill me-2"></i> Repository Name Already Exists</h5>
+                        <p>A repository named "<strong>{{ repo_name }}</strong>" already exists in your GitHub account.</p>
+                        
+                        <hr>
+                        <div class="d-flex justify-content-between">
+                            <div>
+                                <h6>Options:</h6>
+                                <ul class="mb-0">
+                                    <li>Try a different repository name</li>
+                                    {% if repo_in_db %}
+                                        <li>Use your existing repository</li>
+                                    {% else %}
+                                        <li>Connect to the existing repository</li>
+                                    {% endif %}
+                                </ul>
+                            </div>
+                            <div class="text-end">
+                                {% if repo_in_db %}
+                                    <a href="{% url 'repository_detail' existing_repo_id %}" class="btn btn-success">
+                                        <i class="bi bi-box-arrow-in-right me-1"></i> Use Existing Repository
+                                    </a>
+                                {% else %}
+                                    <a href="{% url 'existing_repository' %}" class="btn btn-success">
+                                        <i class="bi bi-link-45deg me-1"></i> Connect to Existing
+                                    </a>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                {% elif error %}
                     <div class="alert alert-danger">
                         <span class="emoji-icon">❌</span> {{ error }}
                     </div>
@@ -23,7 +54,7 @@
                         <label for="{{ form.name.id_for_label }}" class="form-label"><span class="emoji-icon">📝</span> Repository Name</label>
                         {{ form.name.errors }}
                         {{ form.name }}
-                        <div class="form-text text-muted">Choose a unique name for your repository.</div>
+                        <div class="form-text text-muted">Choose a unique name for your repository. Names must be unique within your GitHub account.</div>
                     </div>
                     
                     <div class="mb-3">
