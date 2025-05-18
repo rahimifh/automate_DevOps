@@ -1,0 +1,55 @@
+{% extends 'repository/base.html' %}
+
+{% block title %}GitHub Configuration - GitHub Manager{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header bg-dark text-white">
+                <h3 class="mb-0"><span class="emoji-icon">🔧</span> GitHub Configuration</h3>
+            </div>
+            <div class="card-body">
+                <div class="alert alert-info mb-4">
+                    <h5><span class="emoji-icon">🛠️</span> Follow these steps to create a GitHub token:</h5>
+                    <ol>
+                        <li>Go to <a href="https://github.com/settings/tokens" target="_blank">https://github.com/settings/tokens</a></li>
+                        <li>Click 'Generate new token (classic)'</li>
+                        <li>Give it a name and expiration</li>
+                        <li>Select the following scopes:
+                            <ul>
+                                <li>✅ repo</li>
+                                <li>✅ workflow</li>
+                                <li>✅ user</li>
+                            </ul>
+                        </li>
+                        <li>Click 'Generate token' and copy it immediately</li>
+                    </ol>
+                </div>
+                
+                <form method="post">
+                    {% csrf_token %}
+                    
+                    <div class="mb-3">
+                        <label for="{{ form.github_username.id_for_label }}" class="form-label"><span class="emoji-icon">👤</span> GitHub Username</label>
+                        {{ form.github_username.errors }}
+                        {{ form.github_username }}
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="{{ form.github_token.id_for_label }}" class="form-label"><span class="emoji-icon">🔑</span> GitHub Token</label>
+                        {{ form.github_token.errors }}
+                        {{ form.github_token }}
+                        <div class="form-text text-muted">Your token will be stored securely to interact with GitHub APIs on your behalf.</div>
+                    </div>
+                    
+                    <div class="d-grid gap-2">
+                        <button type="submit" class="btn btn-primary">Save Configuration</button>
+                        <a href="{% url 'dashboard' %}" class="btn btn-outline-secondary">Cancel</a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %} 
