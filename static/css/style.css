@@ -1,0 +1,67 @@
+/* Custom styles for GitHub Manager */
+
+/* Emoji icons */
+.emoji-icon {
+    font-size: 1.2em;
+    margin-right: 0.3em;
+}
+
+/* Card styling */
+.card {
+    border-radius: 0.5rem;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    margin-bottom: 1.5rem;
+    overflow: hidden;
+}
+
+.card-header {
+    font-weight: 500;
+    padding: 0.75rem 1.25rem;
+}
+
+/* Button styling */
+.btn {
+    border-radius: 0.3rem;
+    font-weight: 500;
+    padding: 0.5rem 1rem;
+}
+
+/* Form styling */
+.form-control:focus,
+.form-select:focus {
+    border-color: #5e72e4;
+    box-shadow: 0 0 0 0.2rem rgba(94, 114, 228, 0.25);
+}
+
+/* Navigation bar */
+.navbar {
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+}
+
+.navbar-brand {
+    font-weight: bold;
+}
+
+/* Footer styling */
+.footer {
+    background-color: #f8f9fa;
+    border-top: 1px solid #e9ecef;
+    font-size: 0.875rem;
+    padding: 1.5rem 0;
+}
+
+/* List group styling */
+.list-group-item {
+    border-left: none;
+    border-right: none;
+    padding: 0.75rem 1.25rem;
+}
+
+.list-group-item:first-child {
+    border-top: none;
+}
+
+/* Utility classes */
+.text-muted {
+    color: #6c757d !important;
+} 
