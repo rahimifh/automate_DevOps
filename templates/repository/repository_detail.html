@@ -151,11 +151,11 @@
                     {% csrf_token %}
                     <div class="mb-3">
                         {{ folder_form.folder.errors }}
-                        {{ folder_form.folder }}
-                        <div class="form-text text-muted">Select multiple files to upload</div>
+                        <input type="file" name="folder" webkitdirectory directory multiple class="form-control">
+                        <div class="form-text text-muted">Select an entire folder to upload</div>
                     </div>
                     <div class="d-grid">
-                        <button type="submit" class="btn btn-success">Upload Files</button>
+                        <button type="submit" class="btn btn-success" name="multiple_upload">Upload Files</button>
                     </div>
                 </form>
             </div>

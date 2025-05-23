@@ -98,6 +98,11 @@ MEDIA_ROOT = BASE_DIR / 'media'
 # Default primary key field type
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
+# File upload settings
+DATA_UPLOAD_MAX_NUMBER_FILES = 1000  # Allow up to 1000 files in a single request
+DATA_UPLOAD_MAX_MEMORY_SIZE = 52428800  # 50MB (in bytes)
+FILE_UPLOAD_MAX_MEMORY_SIZE = 10485760  # 10MB (in bytes)
+
 # Authentication settings
 LOGIN_URL = '/login/'
 LOGIN_REDIRECT_URL = '/dashboard/'
