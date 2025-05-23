@@ -12,6 +12,7 @@ from django.contrib.auth.decorators import login_required
 from django.conf import settings
 from django.http import HttpResponse
 from django.contrib import messages
+from django.core.exceptions import TooManyFilesSent
 from .forms import (
     SignUpForm, GitHubConfigForm, NewRepositoryForm, 
     ExistingRepositoryForm, FileUploadForm, FolderUploadForm
@@ -161,22 +162,22 @@ def new_repository_view(request):
             
             with open(os.path.join(workflows_dir, "main.yml"), "w") as wf:
                 wf.write("""
-name: AutoRun on Upload
+                        name: AutoRun on Upload
 
-on:
-  push:
-    branches: [main]
+                        on:
+                        push:
+                        branches: [main]
 
-jobs:
-  build:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v3
-      - name: Show uploaded files
-        run: ls -la
-      - name: Say Hello
-        run: echo "🚀 GitHub Action triggered successfully!"
-""".strip())
+                        jobs:
+                        build:
+                        runs-on: ubuntu-latest
+                        steps:
+                            - uses: actions/checkout@v3
+                            - name: Show uploaded files
+                            run: ls -la
+                            - name: Say Hello
+                            run: echo "🚀 GitHub Action triggered successfully!"
+                        """.strip())
             
             # Create README.md
             with open(os.path.join(repo_dir, "README.md"), "w") as f:
@@ -335,67 +336,89 @@ def repository_browse_view(request, repo_id, path=''):
     file_form = FileUploadForm()
     folder_form = FolderUploadForm()
     
-
-    
     # Normalize the path for security
     current_path = os.path.normpath(path).lstrip('/')
     full_path = os.path.join(repository.local_path, current_path)
     
-
     # Process file uploads
     if request.method == 'POST':
-        if 'file' in request.FILES:
-            file_form = FileUploadForm(request.POST, request.FILES)
-            if file_form.is_valid():
-                uploaded_file = request.FILES['file']
-                
-                # Determine the target path
-                if current_path:
-                    file_path = os.path.join(repository.local_path, current_path, uploaded_file.name)
-                    target_redirect = f"repository_browse"
-                    redirect_args = {"repo_id": repository.id, "path": current_path}
+        try:
+            # Add debug info about the POST request
+            post_data_keys = list(request.POST.keys())
+            files_data_keys = list(request.FILES.keys())
+            has_folder_data = 'folder' in request.FILES
+            has_multiple_upload = 'multiple_upload' in request.POST
+            
+            # Log this information as messages for debugging
+            messages.info(request, f"POST keys: {post_data_keys}")
+            messages.info(request, f"FILES keys: {files_data_keys}")
+            messages.info(request, f"Has folder data: {has_folder_data}")
+            messages.info(request, f"Has multiple_upload: {has_multiple_upload}")
+            
+            if 'file' in request.FILES:
+                file_form = FileUploadForm(request.POST, request.FILES)
+                if file_form.is_valid():
+                    uploaded_file = request.FILES['file']
+                    
+                    # Determine the target path
+                    if current_path:
+                        file_path = os.path.join(repository.local_path, current_path, uploaded_file.name)
+                        target_redirect = f"repository_browse"
+                        redirect_args = {"repo_id": repository.id, "path": current_path}
  
-                else:
-                    file_path = os.path.join(repository.local_path, uploaded_file.name)
-                    target_redirect = f"repository_detail"
-                    redirect_args = {"repo_id": repository.id}
+                    else:
+                        file_path = os.path.join(repository.local_path, uploaded_file.name)
+                        target_redirect = f"repository_detail"
+                        redirect_args = {"repo_id": repository.id}
 
+                    
+                    # Save the file
+                    with open(file_path, 'wb+') as destination:
+                        for chunk in uploaded_file.chunks():
+                            destination.write(chunk)
+                            
+                    # Git operations
+                    subprocess.run(["git", "add", "."], cwd=repository.local_path)
+                    subprocess.run(["git", "commit", "-m", f"Upload: {uploaded_file.name}"], cwd=repository.local_path)
+                    subprocess.run(["git", "push", "origin", "main"], cwd=repository.local_path)
+                    
+                    messages.success(request, f"Successfully uploaded file '{uploaded_file.name}'")
+                    
+                    # Stay in the current directory after upload
+                    if current_path:
+                       
+                        return redirect('repository_browse', repo_id=repository.id, path=current_path)
+                    else:
+                    
+                        return redirect('repository_browse_root', repo_id=repository.id)
                 
-                # Save the file
-                with open(file_path, 'wb+') as destination:
-                    for chunk in uploaded_file.chunks():
-                        destination.write(chunk)
-                        
-                # Git operations
-                subprocess.run(["git", "add", "."], cwd=repository.local_path)
-                subprocess.run(["git", "commit", "-m", f"Upload: {uploaded_file.name}"], cwd=repository.local_path)
-                subprocess.run(["git", "push", "origin", "main"], cwd=repository.local_path)
+            elif 'folder' in request.FILES or 'multiple_upload' in request.POST:
+                # Debug info for folder uploads
+                folder_form = FolderUploadForm(request.POST, request.FILES)
                 
-                messages.success(request, f"Successfully uploaded file '{uploaded_file.name}'")
+                # If multiple_upload button was clicked but no folder field in request.FILES
+                if 'multiple_upload' in request.POST and not request.FILES:
+                    messages.error(request, "No files were selected for upload. Please select a folder.")
+                    return redirect('repository_browse', repo_id=repository.id, path=current_path) if current_path else redirect('repository_browse_root', repo_id=repository.id)
                 
-                # Stay in the current directory after upload
-                if current_path:
-                   
-                    return redirect('repository_browse', repo_id=repository.id, path=current_path)
-                else:
+                # Get all files from the request
+                files = []
+                for key in request.FILES:
+                    if key == 'folder' or key.startswith('folder['):
+                        files.extend(request.FILES.getlist(key))
                 
-                    return redirect('repository_browse_root', repo_id=repository.id)
-                
-        elif 'folder' in request.FILES:
-            # Similarly add debug info for folder uploads
-            folder_form = FolderUploadForm(request.POST, request.FILES)
-            if folder_form.is_valid():
-                files = request.FILES.getlist('folder')
+                if not files:
+                    messages.error(request, "No files were found in the selected folder.")
+                    return redirect('repository_browse', repo_id=repository.id, path=current_path) if current_path else redirect('repository_browse_root', repo_id=repository.id)
+                    
                 uploaded_files = []
                 
                 for f in files:
                     if f and f.name:
-                        # Determine the target path
-                        if current_path:
-                            file_path = os.path.join(repository.local_path, current_path, f.name)
-                        else:
-                            file_path = os.path.join(repository.local_path, f.name)
+                        # Determine the target path, preserving folder structure
+                        file_path = os.path.join(repository.local_path, current_path, f.name) if current_path else os.path.join(repository.local_path, f.name)
                         
+                        # Ensure directories exist
                         os.makedirs(os.path.dirname(file_path), exist_ok=True)
                         
                         with open(file_path, 'wb+') as destination:
@@ -422,6 +445,9 @@ def repository_browse_view(request, repo_id, path=''):
                 else:
               
                     return redirect('repository_browse_root', repo_id=repository.id)
+        except TooManyFilesSent as e:
+            messages.error(request, f"Too many files sent: {str(e)}")
+            return redirect('repository_browse', repo_id=repository.id, path=current_path) if current_path else redirect('repository_browse_root', repo_id=repository.id)
     
     # List files and directories
     files = []
