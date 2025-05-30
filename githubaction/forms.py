@@ -4,14 +4,6 @@ from django.contrib.auth.models import User
 from .models import GitHubConfig, Repository
 
 
-class SignUpForm(UserCreationForm):
-    email = forms.EmailField(max_length=254, required=True)
-
-    class Meta:
-        model = User
-        fields = ('username', 'email', 'password1', 'password2')
-
-
 class GitHubConfigForm(forms.ModelForm):
     class Meta:
         model = GitHubConfig

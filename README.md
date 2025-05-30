@@ -1,6 +1,6 @@
-# GitHub Repository Manager
+# DevOps Tools
 
-A Django web application for managing GitHub repositories - creating, connecting to existing repositories, and uploading files.
+A Django web application for managing DevOps tools including GitHub repositories - creating, connecting to existing repositories, uploading files, and more.
 
 ## Features
 
@@ -19,7 +19,7 @@ A Django web application for managing GitHub repositories - creating, connecting
 
 ```bash
 git clone <repository-url>
-cd django_github_manager
+cd devops_tools
 ```
 
 2. Create and activate a virtual environment:

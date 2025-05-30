@@ -1,0 +1,74 @@
+{% extends 'repository/base.html' %}    
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-md-12">
+            <div class="card">
+                <div class="card-header bg-dark text-white">
+                    <h3 class="mb-0"><i class="bi bi-gear-fill me-2"></i>Jenkins Configuration</h3>
+                </div>
+                <div class="card-body">
+                    <h4 class="mb-3">System Information</h4>
+                    <div class="alert alert-info">
+                        <p><strong>Detected Operating System:</strong> {{ os_info.system }} {{ os_info.release }}</p>
+                        
+                        <div class="table-responsive mt-3">
+                            <table class="table table-bordered">
+                                <thead class="table-dark">
+                                    <tr>
+                                        <th>Property</th>
+                                        <th>Value</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for key, value in os_info.items %}
+                                    <tr>
+                                        <td><strong>{{ key|title }}</strong></td>
+                                        <td>{{ value }}</td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                    
+                    <h4 class="mb-3">Select Your Platform for Jenkins Configuration</h4>
+                    <div class="row">
+                        <div class="col-md-4 mb-3">
+                            <div class="card h-100">
+                                <div class="card-body text-center">
+                                    <i class="bi bi-windows mb-3" style="font-size: 3rem;"></i>
+                                    <h5>Windows</h5>
+                                    <p>Configure Jenkins for Windows systems</p>
+                                    <a href="{% url 'jenkins_config_windows' %}" class="btn btn-primary">Configure for Windows</a>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <div class="card h-100">
+                                <div class="card-body text-center">
+                                    <i class="bi bi-ubuntu mb-3" style="font-size: 3rem;"></i>
+                                    <h5>Linux</h5>
+                                    <p>Configure Jenkins for Linux systems</p>
+                                    <a href="{% url 'jenkins_config_linux' %}" class="btn btn-primary">Configure for Linux</a>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <div class="card h-100">
+                                <div class="card-body text-center">
+                                    <i class="bi bi-apple mb-3" style="font-size: 3rem;"></i>
+                                    <h5>macOS</h5>
+                                    <p>Configure Jenkins for macOS systems</p>
+                                    <a href="{% url 'jenkins_config_mac' %}" class="btn btn-primary">Configure for macOS</a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

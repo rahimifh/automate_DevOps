@@ -1,9 +1,9 @@
 from django.apps import AppConfig
 
-
+# github actions app
 class RepositoryConfig(AppConfig):
     default_auto_field = 'django.db.models.BigAutoField'
-    name = 'repository'
+    name = 'githubaction'
     
     def ready(self):
-        import repository.signals  # Import signals 
+        import githubaction.signals  # Import signals 

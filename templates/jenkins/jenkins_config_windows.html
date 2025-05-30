@@ -1,0 +1,530 @@
+{% extends 'repository/base.html' %}
+{% load static %}
+
+{% block title %}Jenkins Configuration - Windows{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Header -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="d-flex align-items-center">
+                <div class="bg-primary rounded-circle p-3 me-3">
+                    <i class="bi bi-windows text-white" style="font-size: 1.8rem;"></i>
+                </div>
+                <h1 class="mb-0">Jenkins Configuration for Windows</h1>
+            </div>
+        </div>
+    </div>
+
+    <!-- System Status -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">
+                        <i class="bi bi-info-circle text-primary me-2"></i>System Status
+                    </h5>
+                    <button class="btn btn-outline-primary btn-sm" onclick="refreshStatus()">
+                        <i class="bi bi-arrow-clockwise me-1"></i>Refresh
+                    </button>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <strong>Operating System:</strong> {{ os_info.system }}
+                            </div>
+                            <div class="mb-3">
+                                <strong>Version:</strong> {{ os_info.release }}
+                            </div>
+                            <div class="mb-3">
+                                <strong>Architecture:</strong> {{ os_info.machine }}
+                            </div>
+                            <div class="mb-3">
+                                <strong>Machine Type:</strong> {{ os_info.processor }}
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <strong>Java:</strong>
+                                <span id="java-status" class="badge bg-secondary">Checking...</span>
+                            </div>
+                            <div class="mb-3">
+                                <strong>Docker:</strong>
+                                <span id="docker-status" class="badge bg-secondary">Checking...</span>
+                            </div>
+                            <div class="mb-3">
+                                <strong>Jenkins:</strong>
+                                <span id="jenkins-status" class="badge bg-secondary">Checking...</span>
+                            </div>
+                            <div class="mb-3">
+                                <strong>Chocolatey:</strong>
+                                <span id="choco-status" class="badge bg-secondary">Checking...</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Installation Options -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        <i class="bi bi-download text-success me-2"></i>Installation Options
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-4 mb-3">
+                            <button class="btn btn-primary w-100" onclick="installJenkins('msi')">
+                                <i class="bi bi-box-arrow-in-down me-2"></i>Install via MSI
+                            </button>
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <button class="btn btn-info w-100" onclick="installJenkins('chocolatey')">
+                                <i class="bi bi-box me-2"></i>Install via Chocolatey
+                            </button>
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <button class="btn btn-secondary w-100" onclick="installJenkins('docker')">
+                                <i class="bi bi-box2 me-2"></i>Install via Docker
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Progress Section -->
+    <div class="row mb-4" id="progress-section" style="display: none;">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        <i class="bi bi-gear text-primary me-2"></i>Installation Progress
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="progress mb-3">
+                        <div id="progress-bar" class="progress-bar progress-bar-striped progress-bar-animated" role="progressbar" style="width: 0%"></div>
+                    </div>
+                    <div id="progress-messages" class="alert alert-info">
+                        Ready to start installation...
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Installation Methods (Manual) -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        <i class="bi bi-terminal text-warning me-2"></i>Manual Installation Commands
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <!-- MSI Installer -->
+                        <div class="col-md-4 mb-4">
+                            <h6><i class="bi bi-download me-2"></i>MSI Installer</h6>
+                            <p class="text-muted">Download and install using the official MSI installer</p>
+                            <div class="card bg-light">
+                                <div class="card-body">
+                                    <h6>Steps:</h6>
+                                    <ol class="small">
+                                        <li>Download from <a href="https://www.jenkins.io/download/" target="_blank">jenkins.io</a></li>
+                                        <li>Run the MSI installer as Administrator</li>
+                                        <li>Follow the installation wizard</li>
+                                        <li>Service will start automatically</li>
+                                    </ol>
+                                    <div class="mt-3">
+                                        <strong>Default settings:</strong><br>
+                                        <small>
+                                            Location: C:\Program Files\Jenkins<br>
+                                            Service: Jenkins<br>
+                                            Port: 8080<br>
+                                            User: LocalSystem
+                                        </small>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Chocolatey Installation -->
+                        <div class="col-md-4 mb-4">
+                            <h6><i class="bi bi-box me-2"></i>Chocolatey Installation</h6>
+                            <p class="text-muted">Install using Chocolatey package manager</p>
+                            <div class="bg-dark text-light p-3 rounded">
+                                <small>
+                                    <strong>Prerequisites:</strong><br>
+                                    # Install Chocolatey first if not installed<br>
+                                    Set-ExecutionPolicy Bypass -Scope Process -Force;<br>
+                                    [System.Net.ServicePointManager]::SecurityProtocol = [System.Net.ServicePointManager]::SecurityProtocol -bor 3072;<br>
+                                    iex ((New-Object System.Net.WebClient).DownloadString('https://community.chocolatey.org/install.ps1'))<br><br>
+                                    
+                                    <strong>Install Jenkins:</strong><br>
+                                    choco install jenkins -y<br>
+                                    net start jenkins
+                                </small>
+                            </div>
+                        </div>
+
+                        <!-- Docker Installation -->
+                        <div class="col-md-4 mb-4">
+                            <h6><i class="bi bi-box2 me-2"></i>Docker Installation</h6>
+                            <p class="text-muted">Run Jenkins in a Docker container</p>
+                            <div class="bg-dark text-light p-3 rounded">
+                                <small>
+                                    # Pull Jenkins image<br>
+                                    docker pull jenkins/jenkins:lts<br><br>
+                                    
+                                    # Run Jenkins container<br>
+                                    docker run -d -p 8080:8080 -p 50000:50000 `<br>
+                                    &nbsp;&nbsp;--name jenkins `<br>
+                                    &nbsp;&nbsp;-v jenkins_home:/var/jenkins_home `<br>
+                                    &nbsp;&nbsp;jenkins/jenkins:lts<br><br>
+                                    
+                                    # Get initial admin password<br>
+                                    docker exec jenkins cat /var/jenkins_home/secrets/initialAdminPassword
+                                </small>
+                            </div>
+                            <div class="mt-2">
+                                <h6 class="small">Docker Compose example:</h6>
+                                <div class="bg-dark text-light p-2 rounded">
+                                    <small>
+                                        version: '3.8'<br>
+                                        services:<br>
+                                        &nbsp;&nbsp;jenkins:<br>
+                                        &nbsp;&nbsp;&nbsp;&nbsp;image: jenkins/jenkins:lts<br>
+                                        &nbsp;&nbsp;&nbsp;&nbsp;ports:<br>
+                                        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;- "8080:8080"<br>
+                                        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;- "50000:50000"<br>
+                                        &nbsp;&nbsp;&nbsp;&nbsp;volumes:<br>
+                                        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;- jenkins_home:/var/jenkins_home<br>
+                                        volumes:<br>
+                                        &nbsp;&nbsp;jenkins_home:
+                                    </small>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Service Management -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">
+                        <i class="bi bi-gear text-primary me-2"></i>Service Management
+                    </h5>
+                    <button class="btn btn-outline-primary btn-sm" data-bs-toggle="modal" data-bs-target="#managementModal">
+                        <i class="bi bi-terminal me-1"></i>Management Commands
+                    </button>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <h6>Windows Commands:</h6>
+                            <div class="bg-dark text-light p-3 rounded">
+                                <small>
+                                    # Start Jenkins service<br>
+                                    net start jenkins<br><br>
+                                    
+                                    # Stop Jenkins service<br>
+                                    net stop jenkins<br><br>
+                                    
+                                    # Check service status<br>
+                                    sc query jenkins
+                                </small>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <h6>PowerShell Commands:</h6>
+                            <div class="bg-dark text-light p-3 rounded">
+                                <small>
+                                    # Start Jenkins service<br>
+                                    Start-Service jenkins<br><br>
+                                    
+                                    # Stop Jenkins service<br>
+                                    Stop-Service jenkins<br><br>
+                                    
+                                    # Get service status<br>
+                                    Get-Service jenkins
+                                </small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Quick Access -->
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        <i class="bi bi-link-45deg text-info me-2"></i>Quick Access
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-3 mb-2">
+                            <a href="http://localhost:8080" target="_blank" class="btn btn-success w-100">
+                                <i class="bi bi-box-arrow-up-right me-2"></i>Jenkins Interface
+                            </a>
+                        </div>
+                        <div class="col-md-3 mb-2">
+                            <a href="https://www.jenkins.io/doc/" target="_blank" class="btn btn-info w-100">
+                                <i class="bi bi-book me-2"></i>Documentation
+                            </a>
+                        </div>
+                        <div class="col-md-3 mb-2">
+                            <button class="btn btn-warning w-100" onclick="window.open('services.msc', '_blank')">
+                                <i class="bi bi-gear-wide-connected me-2"></i>Services
+                            </button>
+                        </div>
+                        <div class="col-md-3 mb-2">
+                            <a href="{% url 'home' %}" class="btn btn-secondary w-100">
+                                <i class="bi bi-house me-2"></i>Dashboard
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Management Commands Modal -->
+<div class="modal fade" id="managementModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">
+                    <i class="bi bi-terminal me-2"></i>Management Commands
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="accordion" id="commandsAccordion">
+                    <!-- Service Management -->
+                    <div class="accordion-item">
+                        <h2 class="accordion-header">
+                            <button class="accordion-button" type="button" data-bs-toggle="collapse" data-bs-target="#serviceCommands">
+                                <i class="bi bi-gear me-2"></i>Service Management
+                            </button>
+                        </h2>
+                        <div id="serviceCommands" class="accordion-collapse collapse show" data-bs-parent="#commandsAccordion">
+                            <div class="accordion-body">
+                                <div class="bg-dark text-light p-3 rounded">
+                                    <small>
+                                        # Windows Service Commands<br>
+                                        net start jenkins &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;# Start Jenkins<br>
+                                        net stop jenkins &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;# Stop Jenkins<br>
+                                        sc query jenkins &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;# Check status<br>
+                                        sc config jenkins start= auto &nbsp;&nbsp;&nbsp;# Set auto-start<br><br>
+                                        
+                                        # PowerShell Commands<br>
+                                        Start-Service jenkins &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;# Start Jenkins<br>
+                                        Stop-Service jenkins &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;# Stop Jenkins<br>
+                                        Get-Service jenkins &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;# Check status<br>
+                                        Restart-Service jenkins &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;# Restart Jenkins
+                                    </small>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Docker Management -->
+                    <div class="accordion-item">
+                        <h2 class="accordion-header">
+                            <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#dockerCommands">
+                                <i class="bi bi-box2 me-2"></i>Docker Management
+                            </button>
+                        </h2>
+                        <div id="dockerCommands" class="accordion-collapse collapse" data-bs-parent="#commandsAccordion">
+                            <div class="accordion-body">
+                                <div class="bg-dark text-light p-3 rounded">
+                                    <small>
+                                        # Docker Container Management<br>
+                                        docker start jenkins &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;# Start container<br>
+                                        docker stop jenkins &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;# Stop container<br>
+                                        docker restart jenkins &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;# Restart container<br>
+                                        docker logs jenkins &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;# View logs<br>
+                                        docker exec -it jenkins bash &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;# Enter container<br><br>
+                                        
+                                        # Get Initial Password<br>
+                                        docker exec jenkins cat /var/jenkins_home/secrets/initialAdminPassword<br><br>
+                                        
+                                        # Remove Container<br>
+                                        docker rm -f jenkins &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;# Remove container
+                                    </small>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- File Locations -->
+                    <div class="accordion-item">
+                        <h2 class="accordion-header">
+                            <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#fileLocations">
+                                <i class="bi bi-folder me-2"></i>Important File Locations
+                            </button>
+                        </h2>
+                        <div id="fileLocations" class="accordion-collapse collapse" data-bs-parent="#commandsAccordion">
+                            <div class="accordion-body">
+                                <div class="bg-dark text-light p-3 rounded">
+                                    <small>
+                                        # Installation Paths<br>
+                                        C:\Program Files\Jenkins &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;# Default installation<br>
+                                        C:\ProgramData\Jenkins &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;# Jenkins home<br>
+                                        C:\Windows\System32\config\systemprofile\.jenkins # Service home<br><br>
+                                        
+                                        # Service Configuration<br>
+                                        C:\Program Files\Jenkins\jenkins.exe &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;# Service executable<br>
+                                        C:\Program Files\Jenkins\jenkins.xml &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;# Service config<br><br>
+                                        
+                                        # Log Files<br>
+                                        C:\Program Files\Jenkins\jenkins.out.log &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;# Console output<br>
+                                        C:\Program Files\Jenkins\jenkins.err.log &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;# Error log
+                                    </small>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Troubleshooting -->
+                    <div class="accordion-item">
+                        <h2 class="accordion-header">
+                            <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#troubleshooting">
+                                <i class="bi bi-exclamation-triangle me-2"></i>Troubleshooting
+                            </button>
+                        </h2>
+                        <div id="troubleshooting" class="accordion-collapse collapse" data-bs-parent="#commandsAccordion">
+                            <div class="accordion-body">
+                                <div class="bg-dark text-light p-3 rounded">
+                                    <small>
+                                        # Check Java Installation<br>
+                                        java -version &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;# Check Java version<br>
+                                        where java &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;# Find Java path<br><br>
+                                        
+                                        # Check Jenkins Logs<br>
+                                        type "C:\Program Files\Jenkins\jenkins.out.log" &nbsp;&nbsp;# View output log<br>
+                                        type "C:\Program Files\Jenkins\jenkins.err.log" &nbsp;&nbsp;# View error log<br><br>
+                                        
+                                        # Check Port Usage<br>
+                                        netstat -an | findstr :8080 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;# Check if port is in use<br><br>
+                                        
+                                        # Firewall Configuration<br>
+                                        netsh advfirewall firewall add rule name="Jenkins" dir=in action=allow protocol=TCP localport=8080
+                                    </small>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// Status check and installation functions
+function refreshStatus() {
+    fetch('{% url "jenkins:check_jenkins_status_windows" %}')
+        .then(response => response.json())
+        .then(data => {
+            updateStatusBadge('java-status', data.java_installed, 'Java');
+            updateStatusBadge('docker-status', data.docker_installed, 'Docker');
+            updateStatusBadge('jenkins-status', data.jenkins_installed, 'Jenkins');
+            updateStatusBadge('choco-status', data.choco_installed, 'Chocolatey');
+        })
+        .catch(error => {
+            console.error('Error:', error);
+        });
+}
+
+function updateStatusBadge(elementId, isInstalled, name) {
+    const element = document.getElementById(elementId);
+    if (isInstalled) {
+        element.className = 'badge bg-success';
+        element.innerHTML = `<i class="bi bi-check-circle me-1"></i>Installed`;
+    } else {
+        element.className = 'badge bg-danger';
+        element.innerHTML = `<i class="bi bi-x-circle me-1"></i>Not Installed`;
+    }
+}
+
+function installJenkins(method) {
+    showProgress();
+    
+    const data = new FormData();
+    data.append('csrfmiddlewaretoken', '{{ csrf_token }}');
+    data.append('installation_type', method);
+    
+    fetch('{% url "jenkins:jenkins_config_windows" %}', {
+        method: 'POST',
+        body: data
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            updateProgress(100, 'Installation completed successfully!', 'success');
+            setTimeout(() => {
+                hideProgress();
+                refreshStatus();
+            }, 2000);
+        } else {
+            updateProgress(0, `Installation failed: ${data.message}`, 'danger');
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        updateProgress(0, 'Installation failed due to network error', 'danger');
+    });
+}
+
+function showProgress() {
+    document.getElementById('progress-section').style.display = 'block';
+    updateProgress(0, 'Starting installation...', 'info');
+}
+
+function hideProgress() {
+    document.getElementById('progress-section').style.display = 'none';
+}
+
+function updateProgress(percentage, message, type) {
+    const progressBar = document.getElementById('progress-bar');
+    const progressMessages = document.getElementById('progress-messages');
+    
+    progressBar.style.width = percentage + '%';
+    progressBar.setAttribute('aria-valuenow', percentage);
+    
+    progressMessages.className = `alert alert-${type}`;
+    progressMessages.textContent = message;
+}
+
+// Load status on page load
+document.addEventListener('DOMContentLoaded', function() {
+    refreshStatus();
+});
+</script>
+{% endblock %}

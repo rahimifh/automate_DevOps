@@ -1,0 +1,359 @@
+{% extends 'repository/base.html' %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-md-12">
+            <div class="card">
+                <div class="card-header bg-dark text-white">
+                    <h3 class="mb-0"><i class="bi bi-apple me-2"></i>Jenkins Configuration for macOS</h3>
+                </div>
+                <div class="card-body">
+                    <!-- System Status -->
+                    <div class="row mb-4">
+                        <div class="col-md-12">
+                            <h4>System Status</h4>
+                            <div class="alert alert-info">
+                                <p><strong>Architecture:</strong> {{ architecture }}</p>
+                                <div class="row">
+                                    <div class="col-md-3">
+                                        <div class="card text-center">
+                                            <div class="card-body">
+                                                <i class="bi bi-box-seam {% if homebrew_installed %}text-success{% else %}text-danger{% endif %}" style="font-size: 2rem;"></i>
+                                                <h6 class="mt-2">Homebrew</h6>
+                                                <span class="badge {% if homebrew_installed %}bg-success{% else %}bg-danger{% endif %}">
+                                                    {% if homebrew_installed %}Installed{% else %}Not Installed{% endif %}
+                                                </span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-3">
+                                        <div class="card text-center">
+                                            <div class="card-body">
+                                                <i class="bi bi-docker {% if docker_installed %}text-success{% else %}text-danger{% endif %}" style="font-size: 2rem;"></i>
+                                                <h6 class="mt-2">Docker</h6>
+                                                <span class="badge {% if docker_installed %}bg-success{% else %}bg-danger{% endif %}">
+                                                    {% if docker_installed %}Installed{% else %}Not Installed{% endif %}
+                                                </span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-3">
+                                        <div class="card text-center">
+                                            <div class="card-body">
+                                                <i class="bi bi-gear-fill {% if jenkins_installed %}text-success{% else %}text-danger{% endif %}" style="font-size: 2rem;"></i>
+                                                <h6 class="mt-2">Jenkins</h6>
+                                                <span class="badge {% if jenkins_installed %}bg-success{% else %}bg-danger{% endif %}">
+                                                    {% if jenkins_installed %}Installed{% else %}Not Installed{% endif %}
+                                                </span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-3">
+                                        <div class="card text-center">
+                                            <div class="card-body">
+                                                <button class="btn btn-primary btn-sm" onclick="checkStatus()">
+                                                    <i class="bi bi-arrow-clockwise"></i> Refresh Status
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Installation Options -->
+                    <div class="row">
+                        <div class="col-md-6 mb-4">
+                            <div class="card h-100">
+                                <div class="card-header bg-primary text-white">
+                                    <h5 class="mb-0"><i class="bi bi-box-seam me-2"></i>Homebrew Installation</h5>
+                                </div>
+                                <div class="card-body">
+                                    <p>Install Jenkins using Homebrew package manager. This is the recommended method for macOS.</p>
+                                    
+                                    <h6>Features:</h6>
+                                    <ul>
+                                        <li>Automatic service management</li>
+                                        <li>Easy updates with brew upgrade</li>
+                                        <li>Native macOS integration</li>
+                                        <li>Runs as a system service</li>
+                                    </ul>
+                                    
+                                    <h6>Requirements:</h6>
+                                    <ul>
+                                        <li>macOS 10.14 or later</li>
+                                        <li>Administrator privileges</li>
+                                        <li>Internet connection</li>
+                                    </ul>
+                                    
+                                    <div class="mt-3">
+                                        <button class="btn btn-primary btn-lg w-100" onclick="installJenkinsHomebrew()" id="homebrewBtn">
+                                            <i class="bi bi-download me-2"></i>Install via Homebrew
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="col-md-6 mb-4">
+                            <div class="card h-100">
+                                <div class="card-header bg-info text-white">
+                                    <h5 class="mb-0"><i class="bi bi-docker me-2"></i>Docker Installation</h5>
+                                </div>
+                                <div class="card-body">
+                                    <p>Install Jenkins using Docker containers. Provides isolated environment and easy management.</p>
+                                    
+                                    <h6>Features:</h6>
+                                    <ul>
+                                        <li>Isolated environment</li>
+                                        <li>Easy backup and migration</li>
+                                        <li>Pre-configured with plugins</li>
+                                        <li>Configuration as Code (JCasC)</li>
+                                    </ul>
+                                    
+                                    <h6>Requirements:</h6>
+                                    <ul>
+                                        <li>Docker Desktop for Mac</li>
+                                        <li>8GB RAM recommended</li>
+                                        <li>Internet connection</li>
+                                    </ul>
+                                    
+                                    <div class="mt-3">
+                                        {% if docker_installed %}
+                                            <button class="btn btn-info btn-lg w-100" onclick="installJenkinsDocker()" id="dockerBtn">
+                                                <i class="bi bi-download me-2"></i>Install via Docker
+                                            </button>
+                                        {% else %}
+                                            <div class="alert alert-warning">
+                                                <small>Docker is required for this installation method.</small>
+                                            </div>
+                                            <a href="https://docs.docker.com/desktop/install/mac-install/" target="_blank" class="btn btn-warning btn-lg w-100">
+                                                <i class="bi bi-box-arrow-up-right me-2"></i>Install Docker First
+                                            </a>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Installation Progress -->
+                    <div class="row" id="progressSection" style="display: none;">
+                        <div class="col-md-12">
+                            <div class="card">
+                                <div class="card-header bg-success text-white">
+                                    <h5 class="mb-0"><i class="bi bi-gear-wide-connected me-2"></i>Installation Progress</h5>
+                                </div>
+                                <div class="card-body">
+                                    <div class="progress mb-3">
+                                        <div class="progress-bar progress-bar-striped progress-bar-animated" role="progressbar" 
+                                             style="width: 0%" id="progressBar"></div>
+                                    </div>
+                                    <div id="progressMessages">
+                                        <!-- Progress messages will appear here -->
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Quick Access -->
+                    <div class="row mt-4">
+                        <div class="col-md-12">
+                            <div class="card">
+                                <div class="card-header bg-secondary text-white">
+                                    <h5 class="mb-0"><i class="bi bi-link-45deg me-2"></i>Quick Access</h5>
+                                </div>
+                                <div class="card-body">
+                                    <div class="row">
+                                        <div class="col-md-4">
+                                            <a href="http://localhost:8080" target="_blank" class="btn btn-outline-primary w-100">
+                                                <i class="bi bi-globe me-2"></i>Open Jenkins (localhost:8080)
+                                            </a>
+                                        </div>
+                                        <div class="col-md-4">
+                                            <button class="btn btn-outline-info w-100" onclick="showManagementCommands()">
+                                                <i class="bi bi-terminal me-2"></i>Management Commands
+                                            </button>
+                                        </div>
+                                        <div class="col-md-4">
+                                            <a href="{% url 'jenkins:jenkins_dashboard' %}" class="btn btn-outline-secondary w-100">
+                                                <i class="bi bi-arrow-left me-2"></i>Back to Dashboard
+                                            </a>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Management Commands Modal -->
+<div class="modal fade" id="commandsModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Jenkins Management Commands</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <h6>Homebrew Commands:</h6>
+                <pre class="bg-light p-3">
+# Start Jenkins
+brew services start jenkins-lts
+
+# Stop Jenkins
+brew services stop jenkins-lts
+
+# Restart Jenkins
+brew services restart jenkins-lts
+
+# Check status
+brew services list | grep jenkins-lts
+
+# Update Jenkins
+brew upgrade jenkins-lts
+                </pre>
+                
+                <h6>Docker Commands:</h6>
+                <pre class="bg-light p-3">
+# Navigate to Jenkins directory
+cd ~/jenkins-docker
+
+# Start Jenkins
+docker compose up -d
+
+# Stop Jenkins
+docker compose down
+
+# View logs
+docker compose logs -f
+
+# Rebuild image
+docker compose build --no-cache
+                </pre>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function getCookie(name) {
+    let cookieValue = null;
+    if (document.cookie && document.cookie !== '') {
+        const cookies = document.cookie.split(';');
+        for (let i = 0; i < cookies.length; i++) {
+            const cookie = cookies[i].trim();
+            if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                break;
+            }
+        }
+    }
+    return cookieValue;
+}
+
+function showProgress() {
+    document.getElementById('progressSection').style.display = 'block';
+    document.getElementById('progressBar').style.width = '25%';
+}
+
+function hideProgress() {
+    document.getElementById('progressSection').style.display = 'none';
+    document.getElementById('progressBar').style.width = '0%';
+}
+
+function updateProgress(percent, message) {
+    document.getElementById('progressBar').style.width = percent + '%';
+    if (message) {
+        document.getElementById('progressMessages').innerHTML += '<p class="mb-1">' + message + '</p>';
+    }
+}
+
+function installJenkinsHomebrew() {
+    if (!confirm('This will install Jenkins via Homebrew. Continue?')) return;
+    
+    showProgress();
+    document.getElementById('homebrewBtn').disabled = true;
+    updateProgress(10, 'Starting Homebrew installation...');
+    
+    fetch('', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/x-www-form-urlencoded',
+            'X-CSRFToken': getCookie('csrftoken')
+        },
+        body: 'installation_type=homebrew'
+    })
+    .then(response => response.json())
+    .then(data => {
+        updateProgress(100, data.message);
+        document.getElementById('homebrewBtn').disabled = false;
+        if (data.success) {
+            setTimeout(() => location.reload(), 2000);
+        }
+    })
+    .catch(error => {
+        updateProgress(100, 'Error: ' + error);
+        document.getElementById('homebrewBtn').disabled = false;
+    });
+}
+
+function installJenkinsDocker() {
+    if (!confirm('This will install Jenkins via Docker. Continue?')) return;
+    
+    showProgress();
+    document.getElementById('dockerBtn').disabled = true;
+    updateProgress(10, 'Starting Docker installation...');
+    
+    fetch('', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/x-www-form-urlencoded',
+            'X-CSRFToken': getCookie('csrftoken')
+        },
+        body: 'installation_type=docker'
+    })
+    .then(response => response.json())
+    .then(data => {
+        updateProgress(100, data.message);
+        document.getElementById('dockerBtn').disabled = false;
+        if (data.success) {
+            setTimeout(() => location.reload(), 2000);
+        }
+    })
+    .catch(error => {
+        updateProgress(100, 'Error: ' + error);
+        document.getElementById('dockerBtn').disabled = false;
+    });
+}
+
+function checkStatus() {
+    fetch('', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/x-www-form-urlencoded',
+            'X-CSRFToken': getCookie('csrftoken')
+        },
+        body: 'installation_type=check_status'
+    })
+    .then(response => response.json())
+    .then(data => {
+        location.reload();
+    })
+    .catch(error => {
+        console.error('Error checking status:', error);
+    });
+}
+
+function showManagementCommands() {
+    new bootstrap.Modal(document.getElementById('commandsModal')).show();
+}
+</script>
+{% endblock %}
