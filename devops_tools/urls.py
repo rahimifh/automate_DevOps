@@ -11,7 +11,7 @@ urlpatterns = [
     # github actions urls
     path('githubaction/', include('githubaction.urls')),
     # jenkins urls
-    path('jenkins/', include('jenkins.urls')),
+    path('jenkins/', include('jenkins.urls', namespace='jenkins')),
     # Authentication URLs
     path('signup/', core_views.signup_view, name='signup'),
     path('login/', auth_views.LoginView.as_view(template_name='repository/login.html'), name='login'),

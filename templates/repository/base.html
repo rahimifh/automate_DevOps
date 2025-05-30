@@ -19,9 +19,15 @@
 <body>
     <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
         <div class="container">
-            <a class="navbar-brand" href="{% url 'dashboard' %}">
+            {% comment %} dropdown for github and jenkins {% endcomment %}
+            <div class="d-flex justify-content-between w-100 ">
+            <a class="navbar-brand" href="{% url 'githubaction_dashboard' %}">
                 <span class="emoji-icon">🚀</span> GitHub Manager
             </a>
+            <a class="navbar-brand" href="{% url 'jenkins:jenkins_dashboard' %}">
+                <span class="emoji-icon">🚀</span> Jenkins Manager
+            </a>
+            </div>
             <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
                 <span class="navbar-toggler-icon"></span>
             </button>
